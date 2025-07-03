@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helpdesk Application</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React, ReactDOM, Babel CDNs -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        /* Custom styles if needed, but Tailwind is preferred */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- Dummy Data ---
+        const DUMMY_TICKETS = [
+            {
+                id: 'TKT001',
+                subject: 'Printer not working in IT Department',
+                status: 'Open',
+                priority: 'High',
+                createdBy: 'Alice Johnson',
+                createdAt: '2025-07-01',
+                description: 'The printer in the IT department has stopped working since yesterday morning. It is showing an error message "Paper Jam" but there is no paper stuck.',
+                comments: [
+                    { id: 'C001', author: 'Bob Smith', text: 'Checked the printer, seems like a sensor issue. Will replace the part tomorrow.', timestamp: '2025-07-01 14:30' },
+                    { id: 'C002', author: 'Alice Johnson', text: 'Thanks for the quick response!', timestamp: '2025-07-01 15:00' },
+                ],
+            },
+            {
+                id: 'TKT002',
+                subject: 'Software installation request',
+                status: 'In Progress',
+                priority: 'Medium',
+                createdBy: 'Charlie Brown',
+                createdAt: '2025-06-28',
+                description: 'I need "Adobe Photoshop" installed on my new laptop for design work. My laptop details are Dell XPS 15, Serial: XYZ123.',
+                comments: [
+                    { id: 'C003', author: 'David Lee', text: 'Software license verified. Installation scheduled for 2025-07-03.', timestamp: '2025-06-29 10:00' },
+                ],
+            },
+            {
+                id: 'TKT003',
+                subject: 'Network connectivity issues in Marketing',
+                status: 'Closed',
+                priority: 'High',
+                createdBy: 'Eve Adams',
+                createdAt: '2025-06-25',
+                description: 'Our entire marketing team is experiencing intermittent network connectivity issues. Internet drops frequently.',
+                comments: [
+                    { id: 'C004', author: 'Frank Green', text: 'Identified faulty router in Marketing section. Replaced with new one. Connectivity restored.', timestamp: '2025-06-26 11:00' },
+                    { id: 'C005', author: 'Eve Adams', text: 'Confirmed, network is stable now. Thank you!', timestamp: '2025-06-26 14:00' },
+                ],
+            },
+            {
+                id: 'TKT004',
+                subject: 'New employee onboarding setup',
+                status: 'Open',
+                priority: 'Low',
+                createdBy: 'Grace Hall',
+                createdAt: '2025-07-02',
+                description: 'Please set up a new workstation for John Doe, joining on 2025-07-08. He needs a laptop, monitor, and standard software package.',
+                comments: [],
+            },
+            {
+                id: 'TKT005',
+                subject: 'Email client configuration help',
+                status: 'Open',
+                priority: 'Medium',
+                createdBy: 'Henry Wilson',
+                createdAt: '2025-07-02',
+                description: 'I am unable to configure my Outlook email client on my new desktop. It keeps giving an error "Cannot connect to server".',
+                comments: [],
+            },
+        ];
+
+        // --- Components ---
+
+        // Header Component
+        const Header = ({ onLogout, currentScreen }) => {
+            return (
+                <header className="bg-gray-800 text-white p-4 flex justify-between items-center shadow-md">
+                    <h1 className="text-xl font-bold">Helpdesk - {currentScreen}</h1>
+                    <button
+                        onClick={onLogout}
+                        className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out"
+                    >
+                        Logout
+                    </button>
+                </header>
+            );
+        };
+
+        // Login Screen Component
+        const LoginScreen = ({ onLogin }) => {
+            const [username, setUsername] = React.useState('');
+            const [password, setPassword] = React.useState('');
+            const [error, setError] = React.useState('');
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                setError('');
+                // Simple dummy authentication
+                if (username === 'user' && password === 'password') {
+                    onLogin();
+                } else {
+                    setError('Invalid username or password. Try user/password.');
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+                    <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm">
+                        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">Login</h2>
+                        <form onSubmit={handleLogin} className="space-y-4">
+                            <div>
+                                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="username">
+                                    Username
+                                </label>
+                                <input
+                                    type="text"
+                                    id="username"
+                                    className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Enter your username"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
+                                    Password
+                                </label>
+                                <input
+                                    type="password"
+                                    id="password"
+                                    className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="********"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            {error && <p className="text-red-500 text-xs italic">{error}</p>}
+                            <button
+                                type="submit"
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out shadow-md"
+                            >
+                                Sign In
+                            </button>
+                        </form>
+                        <p className="text-center text-gray-600 text-sm mt-4">
+                            Try with username: <span className="font-semibold">user</span>, password: <span className="font-semibold">password</span>
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // Dashboard Screen Component
+        const DashboardScreen = ({ onNavigate }) => {
+            // Calculate dashboard stats from dummy data
+            const totalTickets = DUMMY_TICKETS.length;
+            const openTickets = DUMMY_TICKETS.filter(ticket => ticket.status === 'Open').length;
+            const inProgressTickets = DUMMY_TICKETS.filter(ticket => ticket.status === 'In Progress').length;
+            const closedTickets = DUMMY_TICKETS.filter(ticket => ticket.status === 'Closed').length;
+
+            return (
+                <div className="p-4 sm:p-6 md:p-8 bg-gray-50 min-h-screen">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Dashboard Overview</h2>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                            <div className="text-5xl font-bold text-blue-600 mb-2">{totalTickets}</div>
+                            <p className="text-lg text-gray-600">Total Tickets</p>
+                        </div>
+                        <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                            <div className="text-5xl font-bold text-yellow-600 mb-2">{openTickets}</div>
+                            <p className="text-lg text-gray-600">Open Tickets</p>
+                        </div>
+                        <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                            <div className="text-5xl font-bold text-purple-600 mb-2">{inProgressTickets}</div>
+                            <p className="text-lg text-gray-600">In Progress</p>
+                        </div>
+                        <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center">
+                            <div className="text-5xl font-bold text-green-600 mb-2">{closedTickets}</div>
+                            <p className="text-lg text-gray-600">Closed Tickets</p>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row justify-center gap-4">
+                        <button
+                            onClick={() => onNavigate('TicketList')}
+                            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out text-lg"
+                        >
+                            View All Tickets
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // Ticket List Screen Component
+        const TicketListScreen = ({ onNavigate, setSelectedTicketId }) => {
+            const [filterStatus, setFilterStatus] = React.useState('All'); // State for status filter
+            const [searchQuery, setSearchQuery] = React.useState(''); // State for search query
+
+            // Filter and search tickets
+            const filteredTickets = DUMMY_TICKETS.filter(ticket => {
+                const matchesStatus = filterStatus === 'All' || ticket.status === filterStatus;
+                const matchesSearch = ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                      ticket.createdBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                      ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesStatus && matchesSearch;
+            });
+
+            return (
+                <div className="p-4 sm:p-6 md:p-8 bg-gray-50 min-h-screen">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">All Tickets</h2>
+
+                    {/* Filter and Search Section */}
+                    <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                        <select
+                            className="p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                        >
+                            <option value="All">All Statuses</option>
+                            <option value="Open">Open</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                        <input
+                            type="text"
+                            placeholder="Search by ID, Subject, or Creator..."
+                            className="p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:flex-grow"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Tickets Table/Cards */}
+                    <div className="overflow-x-auto bg-white rounded-lg shadow-md">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket ID</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {filteredTickets.length > 0 ? (
+                                    filteredTickets.map((ticket) => (
+                                        <tr key={ticket.id} className="hover:bg-gray-50">
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ticket.id}</td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{ticket.subject}</td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm">
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                  ticket.status === 'Open' ? 'bg-yellow-100 text-yellow-800' :
+                                                  ticket.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                                                  'bg-green-100 text-green-800'
+                                                }`}>
+                                                  {ticket.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm">
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                  ticket.priority === 'High' ? 'bg-red-100 text-red-800' :
+                                                  ticket.priority === 'Medium' ? 'bg-orange-100 text-orange-800' :
+                                                  'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                  {ticket.priority}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{ticket.createdBy}</td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{ticket.createdAt}</td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedTicketId(ticket.id);
+                                                        onNavigate('TicketDetail');
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-900 transition duration-300 ease-in-out"
+                                                >
+                                                    View
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="7" className="px-4 py-4 text-center text-gray-500">No tickets found.</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="flex justify-center mt-8">
+                        <button
+                            onClick={() => onNavigate('Dashboard')}
+                            className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out text-lg"
+                        >
+                            Back to Dashboard
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // Ticket Detail Screen Component
+        const TicketDetailScreen = ({ onNavigate, selectedTicketId }) => {
+            const ticket = DUMMY_TICKETS.find(t => t.id === selectedTicketId);
+
+            if (!ticket) {
+                return (
+                    <div className="p-4 sm:p-6 md:p-8 bg-gray-50 min-h-screen text-center">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-red-600 mb-4">Ticket Not Found</h2>
+                        <button
+                            onClick={() => onNavigate('TicketList')}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out text-lg"
+                        >
+                            Back to Ticket List
+                        </button>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="p-4 sm:p-6 md:p-8 bg-gray-50 min-h-screen">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Ticket Details: {ticket.id}</h2>
+
+                    <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <p className="text-gray-600 font-semibold">Subject:</p>
+                                <p className="text-lg text-gray-900">{ticket.subject}</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-600 font-semibold">Status:</p>
+                                <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${
+                                  ticket.status === 'Open' ? 'bg-yellow-100 text-yellow-800' :
+                                  ticket.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                                  'bg-green-100 text-green-800'
+                                }`}>
+                                  {ticket.status}
+                                </span>
+                            </div>
+                            <div>
+                                <p className="text-gray-600 font-semibold">Priority:</p>
+                                <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${
+                                  ticket.priority === 'High' ? 'bg-red-100 text-red-800' :
+                                  ticket.priority === 'Medium' ? 'bg-orange-100 text-orange-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {ticket.priority}
+                                </span>
+                            </div>
+                            <div>
+                                <p className="text-gray-600 font-semibold">Created By:</p>
+                                <p className="text-gray-900">{ticket.createdBy}</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-600 font-semibold">Created At:</p>
+                                <p className="text-gray-900">{ticket.createdAt}</p>
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <p className="text-gray-600 font-semibold">Description:</p>
+                            <p className="text-gray-800 bg-gray-100 p-4 rounded-lg mt-2">{ticket.description}</p>
+                        </div>
+
+                        {ticket.comments && ticket.comments.length > 0 && (
+                            <div>
+                                <p className="text-gray-600 font-semibold mb-2">Comments:</p>
+                                <div className="space-y-3">
+                                    {ticket.comments.map(comment => (
+                                        <div key={comment.id} className="bg-gray-100 p-3 rounded-lg text-sm">
+                                            <p className="font-semibold text-gray-800">{comment.author} <span className="text-gray-500 text-xs ml-2">{comment.timestamp}</span></p>
+                                            <p className="text-gray-700">{comment.text}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex justify-center gap-4">
+                        <button
+                            onClick={() => onNavigate('TicketList')}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out text-lg"
+                        >
+                            Back to Ticket List
+                        </button>
+                        <button
+                            onClick={() => onNavigate('Dashboard')}
+                            className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out text-lg"
+                        >
+                            Back to Dashboard
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // Main App Component
+        const App = () => {
+            const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+            const [currentScreen, setCurrentScreen] = React.useState('Login'); // Controls which screen is shown
+            const [selectedTicketId, setSelectedTicketId] = React.useState(null); // For TicketDetail screen
+
+            // Handle login
+            const handleLogin = () => {
+                setIsLoggedIn(true);
+                setCurrentScreen('Dashboard'); // Navigate to dashboard after login
+            };
+
+            // Handle logout
+            const handleLogout = () => {
+                setIsLoggedIn(false);
+                setCurrentScreen('Login'); // Go back to login screen
+                setSelectedTicketId(null); // Clear selected ticket
+            };
+
+            // Handle navigation between screens
+            const handleNavigate = (screenName) => {
+                setCurrentScreen(screenName);
+            };
+
+            // Render different screens based on isLoggedIn and currentScreen state
+            const renderScreen = () => {
+                if (!isLoggedIn) {
+                    return <LoginScreen onLogin={handleLogin} />;
+                } else {
+                    switch (currentScreen) {
+                        case 'Dashboard':
+                            return <DashboardScreen onNavigate={handleNavigate} />;
+                        case 'TicketList':
+                            return <TicketListScreen onNavigate={handleNavigate} setSelectedTicketId={setSelectedTicketId} />;
+                        case 'TicketDetail':
+                            return <TicketDetailScreen onNavigate={handleNavigate} selectedTicketId={selectedTicketId} />;
+                        default:
+                            return <DashboardScreen onNavigate={handleNavigate} />; // Fallback
+                    }
+                }
+            };
+
+            return (
+                <div className="font-sans antialiased bg-gray-100">
+                    {isLoggedIn && <Header onLogout={handleLogout} currentScreen={currentScreen} />}
+                    <main className="min-h-[calc(100vh-64px)]"> {/* Adjust height if header is fixed */}
+                        {renderScreen()}
+                    </main>
+                </div>
+            );
+        };
+
+        // Render the App component into the 'root' div
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
